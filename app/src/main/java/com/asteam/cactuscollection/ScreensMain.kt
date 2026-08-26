@@ -128,7 +128,7 @@ internal fun MainShell(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     // متغیر showBottomBar یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
-    val showBottomBar = currentScreen in listOf(AppScreen.HOME, AppScreen.CLUB, AppScreen.CATALOG, AppScreen.ORDERS, AppScreen.PROFILE)
+    val showBottomBar = currentScreen in listOf(AppScreen.HOME, AppScreen.CLUB, AppScreen.CATALOG, AppScreen.ORDERS, AppScreen.PROFILE, AppScreen.SEARCH)
 
     // تابع navigate منطق یا رابط کاربری مربوط به این بخش را اجرا می‌کند.
     fun navigate(screen: AppScreen) {
@@ -168,6 +168,7 @@ internal fun MainShell(
                     BottomNav(
                         currentScreen = currentScreen,
                         onHome = { onNavigate(AppScreen.HOME) },
+                        onSearch = { onNavigate(AppScreen.SEARCH) },
                         onClub = { onNavigate(AppScreen.CLUB) },
                         onOrders = { onNavigate(AppScreen.ORDERS) },
                         onProfile = { onNavigate(AppScreen.PROFILE) }
@@ -181,6 +182,8 @@ internal fun MainShell(
                     AppScreen.HOME -> HomeScreen(onCatalogSelected)
                     AppScreen.CLUB -> ClubScreen()
                     AppScreen.CATALOG -> CatalogScreen(selectedCatalog) { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
+                    // صفحه جستجو از همان داده‌های دسته‌بندی نسخه محلی استفاده می‌کند.
+                    AppScreen.SEARCH -> SearchScreen(onCatalogSelected)
                     AppScreen.ORDERS -> OrdersScreen()
                     AppScreen.SETTINGS -> SettingsScreen(preferences)
                     AppScreen.ABOUT_US -> AboutUsScreen()
@@ -291,7 +294,7 @@ private fun AppDrawer(
                 )
                 // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                 Spacer(Modifier.height(7.dp))
-                Text("نسخه 1.0.0", fontSize = 11.sp, color = CactusPurple)
+                Text("نسخه ${BuildConfig.VERSION_NAME}", fontSize = 11.sp, color = CactusPurple)
             }
         }
     }
@@ -398,6 +401,71 @@ private fun HomeScreen(onCategory: (String) -> Unit) {
 }
 
 // این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
+@Composable
+private fun SearchScreen(onCategory: (String) -> Unit) {
+    // state متن جستجو را بین recompositionها نگه می‌دارد.
+    val queryState = remember { androidx.compose.runtime.mutableStateOf("") }
+
+    // دسته‌های قابل جستجو در نسخه محلی برنامه.
+    val searchableCategories = listOf(
+        CategoryItem("تیشرت", R.drawable.ic_tshirt, CactusPink),
+        CategoryItem("هودی", R.drawable.ic_hoodie, CactusLavender),
+        CategoryItem("شلوار", R.drawable.ic_pants, CactusYellow),
+        CategoryItem("چاپ اختصاصی", R.drawable.ic_printer, CactusMint),
+        CategoryItem("فروش عمده", R.drawable.ic_boxes, CactusPeach),
+        CategoryItem("طرح‌های آماده", R.drawable.ic_palette, CactusBlue)
+    )
+
+    // با خالی بودن کادر همه دسته‌ها نمایش داده می‌شوند؛ در غیر این صورت عنوان‌ها فیلتر می‌شوند.
+    val filteredCategories = if (queryState.value.isBlank()) {
+        searchableCategories
+    } else {
+        searchableCategories.filter { category ->
+            category.title.contains(queryState.value.trim(), ignoreCase = true)
+        }
+    }
+
+    // لیست اسکرولی باعث می‌شود صفحه روی نمایشگرهای کوچک نیز بدون بریدگی قابل استفاده باشد.
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            // ورودی جستجو؛ در نسخه‌های بعد به جستجوی محصولات سرور متصل می‌شود.
+            androidx.compose.material3.OutlinedTextField(
+                value = queryState.value,
+                onValueChange = { queryState.value = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("جستجو در محصولات و خدمات") },
+                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                shape = RoundedCornerShape(18.dp)
+            )
+        }
+
+        if (filteredCategories.isEmpty()) {
+            item {
+                // پیام واضح در صورت نبود نتیجه به جای صفحه خالی نمایش داده می‌شود.
+                Text(
+                    "نتیجه‌ای پیدا نشد.",
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp),
+                    textAlign = TextAlign.Center,
+                    color = CactusMuted,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        } else {
+            items(filteredCategories) { category ->
+                // انتخاب نتیجه، همان کاتالوگ مرتبط را باز می‌کند و در Back Stack ثبت می‌شود.
+                CategoryCard(category, Modifier.fillMaxWidth()) {
+                    onCategory(category.title)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun CategoryCard(item: CategoryItem, modifier: Modifier, onClick: () -> Unit) {
     // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
@@ -643,6 +711,8 @@ private fun CatalogScreen(category: String, onMessage: (String) -> Unit) {
 private fun BottomNav(
     currentScreen: AppScreen,
     onHome: () -> Unit,
+    // callback دکمه جستجو؛ قبلاً این دکمه بدون عملکرد بود.
+    onSearch: () -> Unit,
     onClub: () -> Unit,
     onOrders: () -> Unit,
     onProfile: () -> Unit
@@ -650,7 +720,7 @@ private fun BottomNav(
     // این NavigationBar دسترسی سریع به بخش‌های اصلی پایین صفحه را فراهم می‌کند.
     NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
         NavItem(currentScreen == AppScreen.HOME || currentScreen == AppScreen.CATALOG, Icons.Rounded.Home, "خانه", onHome)
-        NavItem(false, Icons.Rounded.Search, "جستجو", {})
+        NavItem(currentScreen == AppScreen.SEARCH, Icons.Rounded.Search, "جستجو", onSearch)
         NavItem(currentScreen == AppScreen.ORDERS, Icons.Rounded.ShoppingCart, "سفارش‌ها", onOrders)
         NavItem(currentScreen == AppScreen.CLUB, Icons.Rounded.Star, "باشگاه", onClub)
         NavItem(currentScreen == AppScreen.PROFILE, Icons.Rounded.Person, "پروفایل", onProfile)
@@ -694,6 +764,7 @@ private fun screenTitle(screen: AppScreen, catalog: String): String = when (scre
     AppScreen.ABOUT_APP -> "درباره نرم‌افزار"
     AppScreen.PROFILE -> "حساب کاربری"
     AppScreen.CATALOG -> catalog
+    AppScreen.SEARCH -> "جستجو"
     // این شاخه حالت جایگزین شرط قبلی را مدیریت می‌کند.
     else -> "CACTUS Collection"
 }

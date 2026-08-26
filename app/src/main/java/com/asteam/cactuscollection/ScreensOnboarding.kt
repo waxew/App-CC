@@ -5,6 +5,8 @@ package com.asteam.cactuscollection
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -163,7 +165,7 @@ internal fun SignUpScreen(
     var phone by remember { mutableStateOf(initialPhone) }
     var showSmsInfo by remember { mutableStateOf(false) }
     // متغیر valid یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
-    val valid = phone.filter(Char::isDigit).length >= 10
+    val valid = phone.matches(Regex("^09\\d{9}$"))
 
     // این شرط بررسی می‌کند آیا اجرای شاخه‌ی بعدی لازم است یا خیر.
     if (showSmsInfo) {
@@ -273,7 +275,7 @@ internal fun ProfileFormScreen(
     var email by remember { mutableStateOf(initial.email) }
 
     // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
-    Column(Modifier.fillMaxSize().background(CactusBackground).statusBarsPadding()) {
+    Column(Modifier.fillMaxSize().background(CactusBackground).statusBarsPadding().verticalScroll(rememberScrollState())) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically

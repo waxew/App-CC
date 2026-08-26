@@ -266,8 +266,7 @@ internal fun ContactUsScreen() {
 // این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 internal fun AboutAppScreen() {
-    // صفحه درباره نرم‌افزار عمداً کوتاه نگه داشته شده و اطلاعات فنی مثل نام بسته را به کاربر نمایش نمی‌دهد.
-    // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
+    // صفحه درباره نرم‌افزار عمداً کوتاه است و هیچ نام بسته یا جزئیات فنی داخلی را به کاربر نمایش نمی‌دهد.
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -276,19 +275,16 @@ internal fun AboutAppScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // لوگوی اصلی برند برای حفظ هویت بصری برنامه نمایش داده می‌شود.
-        // این Image تصویر یا لوگوی موردنیاز رابط کاربری را نمایش می‌دهد.
+        // لوگوی اصلی برند.
         Image(
             painter = painterResource(R.drawable.cactus_logo),
             contentDescription = "CACTUS Collection",
             modifier = Modifier.size(144.dp)
         )
 
-        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(20.dp))
 
-        // عنوان صفحه.
-        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
+        // نام برنامه.
         Text(
             "CACTUS Collection",
             fontSize = 24.sp,
@@ -297,26 +293,22 @@ internal fun AboutAppScreen() {
             textAlign = TextAlign.Center
         )
 
-        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(12.dp))
 
-        // فقط چند خط توضیح کاربردی درباره برنامه؛ بدون نمایش package name یا جزئیات داخلی پروژه.
-        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
+        // فقط توضیح کاربردی کوتاه درباره عملکرد برنامه.
         Text(
-            "برنامه‌ای برای مشاهده محصولات پوشاک، سفارش چاپ DTF اختصاصی، انتخاب طرح‌های آماده، ثبت سفارش تکی یا عمده و پیگیری سفارش‌ها.
+            """برنامه‌ای برای مشاهده محصولات پوشاک، سفارش چاپ DTF اختصاصی، انتخاب طرح‌های آماده، ثبت سفارش تکی یا عمده و پیگیری سفارش‌ها.
 
-طراحی شده برای ساده‌تر شدن سفارش چاپ و پوشاک اختصاصی CACTUS Collection.",
+طراحی شده برای ساده‌تر شدن سفارش چاپ و پوشاک اختصاصی CACTUS Collection.""".trimIndent(),
             color = CactusMuted,
             fontSize = 14.sp,
             lineHeight = 23.sp,
             textAlign = TextAlign.Center
         )
 
-        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(22.dp))
 
-        // نسخه به‌صورت خودکار از BuildConfig خوانده می‌شود تا در نسخه‌های بعدی فراموش نشود.
-        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
+        // شماره نسخه مستقیماً از BuildConfig خوانده می‌شود تا همیشه با خروجی واقعی یکسان باشد.
         Text(
             "نسخه ${BuildConfig.VERSION_NAME}",
             color = CactusPurpleDark,
@@ -326,7 +318,6 @@ internal fun AboutAppScreen() {
     }
 }
 
-// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 internal fun ProfileScreen(profile: UserProfile, onEdit: () -> Unit) {
     // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
