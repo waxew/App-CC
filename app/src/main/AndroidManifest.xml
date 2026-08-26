@@ -6,7 +6,7 @@
         android:allowBackup="true"
         android:icon="@drawable/cactus_logo"
         android:label="CACTUS Collection"
-        android:roundIcon="@drawable/cactus_logo_round"
+        android:roundIcon="@drawable/cactus_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.CactusCollection">
         <activity
