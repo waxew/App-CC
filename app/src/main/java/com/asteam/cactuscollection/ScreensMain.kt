@@ -1,3 +1,5 @@
+// [AS-TEAM-DOCUMENTED]
+// فایل ScreensMain.kt: این فایل بخشی از سورس CACTUS Collection است و کامنت‌های زیر برای توضیح منطق، UI و مسئولیت قسمت‌های مهم اضافه شده‌اند.
 package com.asteam.cactuscollection
 
 import android.content.Context
@@ -90,20 +92,26 @@ import com.asteam.cactuscollection.ui.theme.CactusText
 import com.asteam.cactuscollection.ui.theme.CactusYellow
 import kotlinx.coroutines.launch
 
+// ساختار CategoryItem داده‌ها یا مسئولیت مرتبط با این بخش از برنامه را مدل می‌کند.
 private data class CategoryItem(
     val title: String,
+    // این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
     @DrawableRes val icon: Int,
     val background: Color
 )
 
+// ساختار DrawerItem داده‌ها یا مسئولیت مرتبط با این بخش از برنامه را مدل می‌کند.
 private data class DrawerItem(
     val title: String,
+    // متغیر icon یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val icon: ImageVector,
     val screen: AppScreen
 )
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// تابع MainShell منطق یا رابط کاربری مربوط به این بخش را اجرا می‌کند.
 internal fun MainShell(
     currentScreen: AppScreen,
     profile: UserProfile,
@@ -113,17 +121,22 @@ internal fun MainShell(
     onNavigate: (AppScreen) -> Unit,
     onEditProfile: () -> Unit
 ) {
+    // متغیر context یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val context = LocalContext.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    // متغیر scope یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    // متغیر showBottomBar یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val showBottomBar = currentScreen in listOf(AppScreen.HOME, AppScreen.CLUB, AppScreen.CATALOG, AppScreen.ORDERS, AppScreen.PROFILE)
 
+    // تابع navigate منطق یا رابط کاربری مربوط به این بخش را اجرا می‌کند.
     fun navigate(screen: AppScreen) {
         scope.launch { drawerState.close() }
         onNavigate(screen)
     }
 
+    // این Drawer منوی همبرگری برنامه را نمایش و کنترل می‌کند.
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -132,12 +145,14 @@ internal fun MainShell(
                 onClose = { scope.launch { drawerState.close() } },
                 onNavigate = ::navigate,
                 onShare = {
+                    // این coroutine عملیات غیرهمزمان رابط کاربری را بدون مسدود کردن صفحه اجرا می‌کند.
                     scope.launch { drawerState.close() }
                     shareApp(context)
                 }
             )
         }
     ) {
+        // Scaffold چارچوب اصلی صفحه شامل نوار بالا، محتوا و نوار پایین را می‌سازد.
         Scaffold(
             containerColor = CactusBackground,
             snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -148,6 +163,7 @@ internal fun MainShell(
                 )
             },
             bottomBar = {
+                // این شرط بررسی می‌کند آیا اجرای شاخه‌ی بعدی لازم است یا خیر.
                 if (showBottomBar) {
                     BottomNav(
                         currentScreen = currentScreen,
@@ -159,6 +175,7 @@ internal fun MainShell(
                 }
             }
         ) { padding ->
+            // Box برای هم‌پوشانی یا تراز دقیق عناصر این بخش استفاده می‌شود.
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (currentScreen) {
                     AppScreen.HOME -> HomeScreen(onCatalogSelected)
@@ -170,6 +187,7 @@ internal fun MainShell(
                     AppScreen.CONTACT_US -> ContactUsScreen()
                     AppScreen.ABOUT_APP -> AboutAppScreen()
                     AppScreen.PROFILE -> ProfileScreen(profile, onEditProfile)
+                    // این شاخه حالت جایگزین شرط قبلی را مدیریت می‌کند.
                     else -> HomeScreen(onCatalogSelected)
                 }
             }
@@ -177,20 +195,25 @@ internal fun MainShell(
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun AppHeader(title: String, onMenu: () -> Unit) {
+    // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
     Row(
         modifier = Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // این IconButton یک عمل لمسی را با آیکون نمایش می‌دهد.
         IconButton(onClick = onMenu) {
             Icon(Icons.Rounded.Menu, contentDescription = "منوی همبرگری", tint = CactusText, modifier = Modifier.size(28.dp))
         }
+        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
         Text(title, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Black, fontSize = 18.sp)
         Image(painterResource(R.drawable.cactus_logo), null, modifier = Modifier.size(42.dp), contentScale = ContentScale.Fit)
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun AppDrawer(
     currentScreen: AppScreen,
@@ -198,6 +221,7 @@ private fun AppDrawer(
     onNavigate: (AppScreen) -> Unit,
     onShare: () -> Unit
 ) {
+    // متغیر items یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val items = listOf(
         DrawerItem("خانه", Icons.Rounded.Home, AppScreen.HOME),
         DrawerItem("سفارش‌های من", Icons.Rounded.ReceiptLong, AppScreen.ORDERS),
@@ -212,14 +236,19 @@ private fun AppDrawer(
         modifier = Modifier.fillMaxWidth(.86f),
         drawerContainerColor = Color.White
     ) {
+        // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.cactus_logo), null, modifier = Modifier.size(68.dp))
+            // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
             Column(Modifier.weight(1f)) {
                 Text("CACTUS Collection", fontWeight = FontWeight.Black, fontSize = 17.sp)
+                // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                 Text("استایل خودت رو خلق کن!", color = CactusMuted, fontSize = 12.sp)
             }
+            // این IconButton یک عمل لمسی را با آیکون نمایش می‌دهد.
             IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, "بستن") }
         }
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(4.dp))
         items.forEach { item ->
             NavigationDrawerItem(
@@ -242,14 +271,17 @@ private fun AppDrawer(
             onClick = onShare,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
         )
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.weight(1f))
         Card(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
             colors = CardDefaults.cardColors(containerColor = CactusLavender.copy(alpha = .65f)),
             shape = RoundedCornerShape(20.dp)
         ) {
+            // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
             Column(Modifier.padding(14.dp)) {
                 Text("درباره نرم‌افزار", fontWeight = FontWeight.ExtraBold, color = CactusPurpleDark)
+                // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                 Spacer(Modifier.height(5.dp))
                 Text(
                     "سفارش چاپ DTF روی لباس، شخصی‌سازی طرح، خرید تکی و عمده و باشگاه مشتریان در یک برنامه.",
@@ -257,6 +289,7 @@ private fun AppDrawer(
                     fontSize = 12.sp,
                     lineHeight = 19.sp
                 )
+                // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                 Spacer(Modifier.height(7.dp))
                 Text("نسخه 1.0.0", fontSize = 11.sp, color = CactusPurple)
             }
@@ -264,8 +297,10 @@ private fun AppDrawer(
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun HomeScreen(onCategory: (String) -> Unit) {
+    // متغیر categories یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val categories = listOf(
         CategoryItem("تیشرت", R.drawable.ic_tshirt, CactusPink),
         CategoryItem("هودی", R.drawable.ic_hoodie, CactusLavender),
@@ -275,36 +310,45 @@ private fun HomeScreen(onCategory: (String) -> Unit) {
         CategoryItem("طرح‌های آماده", R.drawable.ic_palette, CactusBlue)
     )
 
+    // LazyColumn محتوای عمودی را بهینه و قابل اسکرول نمایش می‌دهد.
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
+            // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
             Card(shape = RoundedCornerShape(28.dp), elevation = CardDefaults.cardElevation(5.dp)) {
                 Box(
                     Modifier.fillMaxWidth().height(190.dp).background(
                         Brush.linearGradient(listOf(Color(0xFF7A54C4), Color(0xFFB486E8), Color(0xFFF1B6D8)))
                     )
                 ) {
+                    // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
                     Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center) {
                         Text("چاپ اختصاصی", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black)
+                        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                         Text("روی لباس‌های خاص تو!", color = Color.White.copy(alpha = .9f), fontSize = 15.sp)
                         Spacer(Modifier.height(15.dp))
+                        // این Button یک عمل قابل لمس را در اختیار کاربر قرار می‌دهد.
                         Button(
                             onClick = { onCategory("چاپ اختصاصی") },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF7DA7)),
                             shape = RoundedCornerShape(16.dp)
                         ) {
+                            // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
                             Icon(Icons.Rounded.AutoAwesome, null)
                             Spacer(Modifier.width(7.dp))
+                            // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                             Text("شروع طراحی", fontWeight = FontWeight.Bold)
                         }
                     }
+                    // Box برای هم‌پوشانی یا تراز دقیق عناصر این بخش استفاده می‌شود.
                     Box(
                         Modifier.align(Alignment.CenterEnd).padding(end = 18.dp).size(108.dp).clip(CircleShape).background(Color.White.copy(alpha = .20f)),
                         contentAlignment = Alignment.Center
                     ) {
+                        // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
                         Icon(painterResource(R.drawable.ic_hoodie), null, modifier = Modifier.size(84.dp), tint = Color.Unspecified)
                     }
                 }
@@ -312,30 +356,38 @@ private fun HomeScreen(onCategory: (String) -> Unit) {
         }
 
         item {
+            // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
             Text("چی دوست داری بسازی؟", fontSize = 19.sp, fontWeight = FontWeight.Black, color = CactusText)
         }
 
         items(categories.chunked(2)) { rowItems ->
+            // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 rowItems.forEach { item ->
                     CategoryCard(item, Modifier.weight(1f)) { onCategory(item.title) }
                 }
+                // این شرط بررسی می‌کند آیا اجرای شاخه‌ی بعدی لازم است یا خیر.
                 if (rowItems.size == 1) Spacer(Modifier.weight(1f))
             }
         }
 
         item {
+            // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
+                // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
                 Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(54.dp).clip(CircleShape).background(CactusLavender), contentAlignment = Alignment.Center) {
+                        // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
                         Icon(Icons.Rounded.Star, null, tint = CactusPurple, modifier = Modifier.size(30.dp))
                     }
+                    // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
+                        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                         Text("باشگاه مشتریان CACTUS", fontWeight = FontWeight.ExtraBold)
                         Text("امتیاز بگیر، در چالش‌ها شرکت کن و تجربه‌ات را با بقیه به اشتراک بگذار.", color = CactusMuted, fontSize = 12.sp)
                     }
@@ -345,45 +397,58 @@ private fun HomeScreen(onCategory: (String) -> Unit) {
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun CategoryCard(item: CategoryItem, modifier: Modifier, onClick: () -> Unit) {
+    // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
     Card(
         modifier = modifier.height(126.dp).clickable(onClick = onClick),
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = item.background),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
+        // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
         Column(Modifier.fillMaxSize().padding(13.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Icon(painterResource(item.icon), null, modifier = Modifier.size(58.dp), tint = Color.Unspecified)
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(8.dp))
             Text(item.title, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
         }
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun ClubScreen() {
+    // LazyColumn محتوای عمودی را بهینه و قابل اسکرول نمایش می‌دهد.
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
+            // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
             Card(shape = RoundedCornerShape(26.dp), elevation = CardDefaults.cardElevation(4.dp)) {
                 Column(
                     Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF65429F), Color(0xFF986FD0)))).padding(20.dp)
                 ) {
+                    // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(58.dp).clip(CircleShape).background(Color.White.copy(alpha = .18f)), contentAlignment = Alignment.Center) {
+                            // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
                             Icon(Icons.Rounded.AccountCircle, null, tint = Color.White, modifier = Modifier.size(42.dp))
                         }
+                        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
+                            // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                             Text("باشگاه مشتریان", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
                             Text("سطح نقره‌ای", color = Color.White.copy(alpha = .8f), fontSize = 12.sp)
                         }
+                        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                         Text("1,250 ★", color = Color.White, fontWeight = FontWeight.Black, fontSize = 19.sp)
                     }
+                    // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                     Spacer(Modifier.height(16.dp))
                     LinearProgressIndicator(
                         progress = 0.62f,
@@ -391,6 +456,7 @@ private fun ClubScreen() {
                         color = Color(0xFFFFD166),
                         trackColor = Color.White.copy(alpha = .20f)
                     )
+                    // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                     Spacer(Modifier.height(6.dp))
                     Text("750 امتیاز تا سطح طلایی", color = Color.White.copy(alpha = .85f), fontSize = 11.sp)
                 }
@@ -398,6 +464,7 @@ private fun ClubScreen() {
         }
 
         item {
+            // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 ClubQuickAction("امتیازها", Icons.Rounded.Star, Modifier.weight(1f))
                 ClubQuickAction("نظرات", Icons.Rounded.Comment, Modifier.weight(1f))
@@ -428,14 +495,18 @@ private fun ClubScreen() {
             )
         }
         item {
+            // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
             Card(
                 colors = CardDefaults.cardColors(containerColor = CactusLavender),
                 shape = RoundedCornerShape(22.dp)
             ) {
+                // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.AutoAwesome, null, tint = CactusPurple, modifier = Modifier.size(38.dp))
+                    // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
+                        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                         Text("چالش فعال: طرح تابستون من", fontWeight = FontWeight.ExtraBold, color = CactusPurpleDark)
                         Text("طرح خودت را بساز؛ بهترین طرح امتیاز ویژه می‌گیرد.", color = CactusMuted, fontSize = 12.sp)
                     }
@@ -445,42 +516,57 @@ private fun ClubScreen() {
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun ClubQuickAction(label: String, icon: ImageVector, modifier: Modifier) {
+    // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
     Card(modifier = modifier, shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
         Column(Modifier.padding(vertical = 12.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
             Icon(icon, null, tint = CactusPurple)
             Spacer(Modifier.height(5.dp))
+            // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
             Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun CommunityPost(name: String, time: String, text: String, @DrawableRes icon: Int, likes: String, comments: String) {
+    // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
     Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
         Column(Modifier.padding(15.dp)) {
+            // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(42.dp).clip(CircleShape).background(CactusLavender), contentAlignment = Alignment.Center) {
+                    // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
                     Icon(Icons.Rounded.Person, null, tint = CactusPurple)
                 }
+                // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                 Spacer(Modifier.width(9.dp))
                 Column {
+                    // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                     Text(name, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
                     Text(time, color = CactusMuted, fontSize = 10.sp)
                 }
             }
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(12.dp))
             Text(text, color = CactusText, fontSize = 13.sp, lineHeight = 21.sp)
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(12.dp))
             Box(
                 Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(listOf(CactusLavender, CactusPink))),
                 contentAlignment = Alignment.Center
             ) {
+                // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
                 Icon(painterResource(icon), null, modifier = Modifier.size(92.dp), tint = Color.Unspecified)
             }
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                 Text("♥ $likes", color = CactusPurple, fontSize = 12.sp)
                 Text("💬 $comments", color = CactusMuted, fontSize = 12.sp)
             }
@@ -488,47 +574,61 @@ private fun CommunityPost(name: String, time: String, text: String, @DrawableRes
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun CatalogScreen(category: String, onMessage: (String) -> Unit) {
+    // متغیر products یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val products = when (category) {
         "هودی" -> listOf("هودی مشکی چاپ سفارشی", "هودی یاسی مینیمال", "هودی اورسایز طرح Galaxy")
         "شلوار" -> listOf("شلوار بگ چاپ کناری", "اسلش مشکی چاپ اختصاصی", "شلوار راحتی طرح مینیمال")
         "فروش عمده" -> listOf("پکیج 20 عددی", "پکیج 50 عددی", "استعلام 100 عدد به بالا")
         "طرح‌های آماده" -> listOf("کالکشن مینیمال", "کالکشن Streetwear", "کالکشن فارسی")
         "چاپ اختصاصی" -> listOf("چاپ روی سینه", "چاپ پشت کامل", "چاپ آستین / پاچه")
+        // این شاخه حالت جایگزین شرط قبلی را مدیریت می‌کند.
         else -> listOf("تیشرت سفید چاپ اختصاصی", "تیشرت مشکی طرح آماده", "تیشرت اورسایز Premium")
     }
+    // متغیر icon یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val icon = when (category) {
         "هودی" -> R.drawable.ic_hoodie
         "شلوار" -> R.drawable.ic_pants
         "فروش عمده" -> R.drawable.ic_boxes
         "طرح‌های آماده" -> R.drawable.ic_palette
         "چاپ اختصاصی" -> R.drawable.ic_printer
+        // این شاخه حالت جایگزین شرط قبلی را مدیریت می‌کند.
         else -> R.drawable.ic_tshirt
     }
 
+    // LazyColumn محتوای عمودی را بهینه و قابل اسکرول نمایش می‌دهد.
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
+            // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
             Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = CactusLavender)) {
                 Column(Modifier.padding(16.dp)) {
+                    // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                     Text(category, fontSize = 21.sp, fontWeight = FontWeight.Black, color = CactusPurpleDark)
                     Spacer(Modifier.height(5.dp))
+                    // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                     Text("نمونه‌های نسخه 1.0؛ انتخاب رنگ، سایز، محل چاپ و آپلود طرح در توسعه بعدی به سفارش متصل می‌شود.", color = CactusMuted, fontSize = 12.sp)
                 }
             }
         }
         items(products) { product ->
+            // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
             Card(
                 modifier = Modifier.fillMaxWidth().clickable { onMessage("«$product» انتخاب شد؛ صفحه سفارش در نسخه بعد تکمیل می‌شود.") },
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
+                // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
                 Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(76.dp).clip(RoundedCornerShape(18.dp)).background(CactusLavender.copy(alpha = .65f)), contentAlignment = Alignment.Center) {
+                        // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
                         Icon(painterResource(icon), null, modifier = Modifier.size(55.dp), tint = Color.Unspecified)
                     }
+                    // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
                     Spacer(Modifier.width(13.dp))
                     Column(Modifier.weight(1f)) {
+                        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                         Text(product, fontWeight = FontWeight.ExtraBold)
                         Text("قابل شخصی‌سازی", color = CactusPurple, fontSize = 12.sp)
                     }
@@ -538,6 +638,7 @@ private fun CatalogScreen(category: String, onMessage: (String) -> Unit) {
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun BottomNav(
     currentScreen: AppScreen,
@@ -546,6 +647,7 @@ private fun BottomNav(
     onOrders: () -> Unit,
     onProfile: () -> Unit
 ) {
+    // این NavigationBar دسترسی سریع به بخش‌های اصلی پایین صفحه را فراهم می‌کند.
     NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
         NavItem(currentScreen == AppScreen.HOME || currentScreen == AppScreen.CATALOG, Icons.Rounded.Home, "خانه", onHome)
         NavItem(false, Icons.Rounded.Search, "جستجو", {})
@@ -555,18 +657,23 @@ private fun BottomNav(
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun NavItem(selected: Boolean, icon: ImageVector, label: String, onClick: () -> Unit) {
+    // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
     Column(
         modifier = Modifier.width(72.dp).clickable(onClick = onClick).padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Box برای هم‌پوشانی یا تراز دقیق عناصر این بخش استفاده می‌شود.
         Box(
             modifier = Modifier.size(34.dp).clip(CircleShape).background(if (selected) CactusLavender else Color.Transparent),
             contentAlignment = Alignment.Center
         ) {
+            // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
             Icon(icon, null, tint = if (selected) CactusPurple else CactusMuted, modifier = Modifier.size(22.dp))
         }
+        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
         Text(
             label,
             fontSize = 10.sp,
@@ -576,6 +683,7 @@ private fun NavItem(selected: Boolean, icon: ImageVector, label: String, onClick
     }
 }
 
+// تابع screenTitle منطق یا رابط کاربری مربوط به این بخش را اجرا می‌کند.
 private fun screenTitle(screen: AppScreen, catalog: String): String = when (screen) {
     AppScreen.HOME -> "CACTUS Collection"
     AppScreen.CLUB -> "باشگاه مشتریان"
@@ -586,9 +694,11 @@ private fun screenTitle(screen: AppScreen, catalog: String): String = when (scre
     AppScreen.ABOUT_APP -> "درباره نرم‌افزار"
     AppScreen.PROFILE -> "حساب کاربری"
     AppScreen.CATALOG -> catalog
+    // این شاخه حالت جایگزین شرط قبلی را مدیریت می‌کند.
     else -> "CACTUS Collection"
 }
 
+// تابع shareApp منطق یا رابط کاربری مربوط به این بخش را اجرا می‌کند.
 private fun shareApp(context: Context) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"

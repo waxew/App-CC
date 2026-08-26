@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- [AS-TEAM-DOCUMENTED] فایل colors.xml: منابع یا پیکربندی رابط اندروید؛ عناصر اصلی برای نگهداری آسان‌تر مستندسازی شده‌اند. -->
 <resources>
     <color name="cactus_background">#FFF8F6</color>
     <color name="cactus_purple">#7E57C2</color>

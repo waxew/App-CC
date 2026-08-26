@@ -1,3 +1,5 @@
+// [AS-TEAM-DOCUMENTED]
+// فایل ScreensOnboarding.kt: این فایل بخشی از سورس CACTUS Collection است و کامنت‌های زیر برای توضیح منطق، UI و مسئولیت قسمت‌های مهم اضافه شده‌اند.
 package com.asteam.cactuscollection
 
 import androidx.annotation.DrawableRes
@@ -64,6 +66,7 @@ import com.asteam.cactuscollection.ui.theme.CactusText
 import com.asteam.cactuscollection.ui.theme.CactusYellow
 import kotlinx.coroutines.delay
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 internal fun SplashScreen(onFinished: () -> Unit) {
     LaunchedEffect(Unit) {
@@ -71,6 +74,7 @@ internal fun SplashScreen(onFinished: () -> Unit) {
         onFinished()
     }
 
+    // Box برای هم‌پوشانی یا تراز دقیق عناصر این بخش استفاده می‌شود.
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -85,66 +89,83 @@ internal fun SplashScreen(onFinished: () -> Unit) {
         DecorativeDot(18, CactusYellow, Modifier.align(Alignment.TopEnd).padding(top = 90.dp, end = 38.dp))
         DecorativeDot(22, CactusBlue, Modifier.align(Alignment.BottomStart).padding(bottom = 180.dp, start = 30.dp))
 
+        // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // این Image تصویر یا لوگوی موردنیاز رابط کاربری را نمایش می‌دهد.
             Image(
                 painter = painterResource(R.drawable.cactus_logo),
                 contentDescription = "CACTUS Collection",
                 modifier = Modifier.size(210.dp).shadow(10.dp, CircleShape).clip(CircleShape),
                 contentScale = ContentScale.Fit
             )
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(24.dp))
             Text("استایل خودت رو خلق کن!", fontSize = 25.sp, fontWeight = FontWeight.Black, color = CactusText)
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(7.dp))
             Text("چاپ اختصاصی، کیفیت بی‌نظیر", color = CactusMuted, fontSize = 15.sp)
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(34.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SplashMiniCard(R.drawable.ic_hoodie, "هودی", CactusLavender)
                 SplashMiniCard(R.drawable.ic_tshirt, "تیشرت", CactusPink)
                 SplashMiniCard(R.drawable.ic_printer, "چاپ DTF", CactusMint)
             }
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(30.dp))
             CircularProgressIndicator(modifier = Modifier.size(28.dp), color = CactusPurple, strokeWidth = 3.dp)
         }
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun DecorativeDot(size: Int, color: Color, modifier: Modifier) {
+    // Box برای هم‌پوشانی یا تراز دقیق عناصر این بخش استفاده می‌شود.
     Box(modifier.size(size.dp).clip(CircleShape).background(color))
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun SplashMiniCard(@DrawableRes icon: Int, label: String, background: Color) {
+    // Card محتوای این بخش را داخل یک سطح مجزا و خوانا نمایش می‌دهد.
     Card(
         colors = CardDefaults.cardColors(containerColor = background),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(3.dp)
     ) {
+        // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
         Column(
             Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
             Icon(painterResource(icon), null, modifier = Modifier.size(38.dp), tint = Color.Unspecified)
             Spacer(Modifier.height(4.dp))
+            // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
             Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 internal fun SignUpScreen(
     initialPhone: String,
     onContinue: (String) -> Unit,
     onSkip: () -> Unit
 ) {
+    // متغیر phone یک مقدار قابل‌تغییر موردنیاز این بخش را نگهداری می‌کند.
     var phone by remember { mutableStateOf(initialPhone) }
     var showSmsInfo by remember { mutableStateOf(false) }
+    // متغیر valid یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val valid = phone.filter(Char::isDigit).length >= 10
 
+    // این شرط بررسی می‌کند آیا اجرای شاخه‌ی بعدی لازم است یا خیر.
     if (showSmsInfo) {
         AlertDialog(
             onDismissRequest = { showSmsInfo = false },
@@ -161,10 +182,12 @@ internal fun SignUpScreen(
         )
     }
 
+    // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
     Column(
         modifier = Modifier.fillMaxSize().background(CactusBackground).statusBarsPadding().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(38.dp))
         Card(
             modifier = Modifier.size(118.dp),
@@ -172,17 +195,22 @@ internal fun SignUpScreen(
             colors = CardDefaults.cardColors(containerColor = CactusLavender),
             elevation = CardDefaults.cardElevation(3.dp)
         ) {
+            // Box برای هم‌پوشانی یا تراز دقیق عناصر این بخش استفاده می‌شود.
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
                     Text("🌵", fontSize = 48.sp)
                     Text("CACTUS", fontWeight = FontWeight.Black, color = CactusPurpleDark, fontSize = 13.sp)
                 }
             }
         }
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(28.dp))
         Text("ثبت‌نام با شماره موبایل", fontSize = 25.sp, fontWeight = FontWeight.Black, color = CactusText)
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(8.dp))
         Text("برای شروع، شماره موبایل خود را وارد کنید", color = CactusMuted, fontSize = 14.sp)
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(28.dp))
         OutlinedTextField(
             value = phone,
@@ -195,6 +223,7 @@ internal fun SignUpScreen(
             shape = RoundedCornerShape(18.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
         )
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = { showSmsInfo = true },
@@ -203,24 +232,32 @@ internal fun SignUpScreen(
             colors = ButtonDefaults.buttonColors(containerColor = CactusPurple),
             shape = RoundedCornerShape(18.dp)
         ) {
+            // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
             Text("ارسال کد تأیید", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(18.dp))
         Text("یا", color = CactusMuted)
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(18.dp))
         OutlinedButton(onClick = onSkip, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(18.dp)) {
+            // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
             Text("بعداً ثبت نام می‌کنم", color = CactusPurpleDark, fontWeight = FontWeight.Bold)
         }
         TextButton(onClick = onSkip) { Text("رد کردن", color = CactusPurple) }
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // این Icon نشانه‌ی بصری مرتبط با عملیات یا وضعیت را نمایش می‌دهد.
             Icon(Icons.Rounded.Lock, null, modifier = Modifier.size(16.dp), tint = CactusMuted)
             Text("  اطلاعات شما کاملاً محفوظ است", color = CactusMuted, fontSize = 12.sp)
         }
+        // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
         Spacer(Modifier.height(24.dp))
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 internal fun ProfileFormScreen(
     phone: String,
@@ -228,29 +265,37 @@ internal fun ProfileFormScreen(
     onBack: () -> Unit,
     onSave: (UserProfile) -> Unit
 ) {
+    // متغیر firstName یک مقدار قابل‌تغییر موردنیاز این بخش را نگهداری می‌کند.
     var firstName by remember { mutableStateOf(initial.firstName) }
     var lastName by remember { mutableStateOf(initial.lastName) }
+    // متغیر city یک مقدار قابل‌تغییر موردنیاز این بخش را نگهداری می‌کند.
     var city by remember { mutableStateOf(initial.city) }
     var email by remember { mutableStateOf(initial.email) }
 
+    // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
     Column(Modifier.fillMaxSize().background(CactusBackground).statusBarsPadding()) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // این IconButton یک عمل لمسی را با آیکون نمایش می‌دهد.
             IconButton(onClick = onBack) { Icon(Icons.Rounded.ArrowBack, "بازگشت") }
             Text("تکمیل اطلاعات کاربر", fontWeight = FontWeight.Black, fontSize = 20.sp)
         }
+        // Column عناصر رابط کاربری این قسمت را به‌صورت عمودی مرتب می‌کند.
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Image(painterResource(R.drawable.cactus_logo), null, modifier = Modifier.size(92.dp))
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(14.dp))
             Text("خوش اومدی به خانواده CACTUS", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
             Text("اطلاعات پایه را وارد کن تا سفارش‌ها و باشگاه مشتریان شخصی‌سازی شوند.", color = CactusMuted, fontSize = 13.sp, textAlign = TextAlign.Center)
             Spacer(Modifier.height(18.dp))
             ProfileField(firstName, { firstName = it }, "نام")
             ProfileField(lastName, { lastName = it }, "نام خانوادگی")
             ProfileField(city, { city = it }, "شهر")
             ProfileField(email, { email = it }, "ایمیل (اختیاری)", KeyboardType.Email)
+            // Spacer فاصله‌ی کنترل‌شده بین عناصر رابط کاربری ایجاد می‌کند.
             Spacer(Modifier.height(14.dp))
             Button(
                 onClick = { onSave(UserProfile(phone, firstName.trim(), lastName.trim(), city.trim(), email.trim())) },
@@ -263,6 +308,7 @@ internal fun ProfileFormScreen(
     }
 }
 
+// این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
 private fun ProfileField(
     value: String,

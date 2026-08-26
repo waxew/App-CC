@@ -1,3 +1,4 @@
+<!-- [AS-TEAM-DOCUMENTED] فایل ic_boxes.xml: منابع یا پیکربندی رابط اندروید؛ عناصر اصلی برای نگهداری آسان‌تر مستندسازی شده‌اند. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="64dp" android:height="64dp" android:viewportWidth="64" android:viewportHeight="64">
     <path android:fillColor="#FFD39B55" android:pathData="M6,30 L29,30 L29,55 L6,55 Z M35,30 L58,30 L58,55 L35,55 Z M20,7 L44,7 L44,28 L20,28 Z"/>
     <path android:fillColor="#FFF2C78D" android:pathData="M10,34 L25,34 L25,38 L10,38 Z M39,34 L54,34 L54,38 L39,38 Z M24,11 L40,11 L40,15 L24,15 Z"/>

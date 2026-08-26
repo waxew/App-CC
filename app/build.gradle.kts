@@ -1,22 +1,28 @@
+// [AS-TEAM-DOCUMENTED]
+// فایل build.gradle.kts: تنظیمات ساخت پروژه؛ کامنت‌ها نقش بلوک‌های اصلی Gradle را توضیح می‌دهند.
+// پلاگین‌های موردنیاز برای ساخت اپ اندروید و کامپایل Kotlin در این بلوک فعال می‌شوند.
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
 
+// تنظیمات اصلی Android مانند SDK، نسخه برنامه، امضا و نوع Build در این بلوک قرار دارد.
 android {
     namespace = "com.asteam.cactuscollection"
     compileSdk = 35
 
+    // تنظیمات عمومی نسخه نصب‌شونده روی دستگاه‌ها در defaultConfig تعریف می‌شود.
     defaultConfig {
         applicationId = "com.asteam.cactuscollection"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         buildConfigField("String", "UPDATE_MANIFEST_URL", "\"\"")
     }
 
+    // signingConfigs هویت امضای نسخه Release را مشخص می‌کند تا آپدیت‌های آینده روی نسخه قبلی نصب شوند.
     signingConfigs {
         create("release") {
             storeFile = file("cactus-release.jks")
@@ -26,6 +32,7 @@ android {
         }
     }
 
+    // buildTypes تفاوت ساخت نسخه Release و سایر خروجی‌ها را کنترل می‌کند.
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -60,6 +67,7 @@ android {
     }
 }
 
+// کتابخانه‌های مورد استفاده برنامه در dependencies اعلام می‌شوند.
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.0")
