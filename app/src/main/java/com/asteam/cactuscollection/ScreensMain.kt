@@ -54,8 +54,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
@@ -559,19 +557,23 @@ private fun BottomNav(
 
 @Composable
 private fun NavItem(selected: Boolean, icon: ImageVector, label: String, onClick: () -> Unit) {
-    NavigationBarItem(
-        selected = selected,
-        onClick = onClick,
-        icon = { Icon(icon, null) },
-        label = { Text(label) },
-        colors = NavigationBarItemDefaults.colors(
-            selectedIconColor = CactusPurple,
-            selectedTextColor = CactusPurpleDark,
-            indicatorColor = CactusLavender,
-            unselectedIconColor = CactusMuted,
-            unselectedTextColor = CactusMuted
+    Column(
+        modifier = Modifier.width(72.dp).clickable(onClick = onClick).padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier.size(34.dp).clip(CircleShape).background(if (selected) CactusLavender else Color.Transparent),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = if (selected) CactusPurple else CactusMuted, modifier = Modifier.size(22.dp))
+        }
+        Text(
+            label,
+            fontSize = 10.sp,
+            color = if (selected) CactusPurpleDark else CactusMuted,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
-    )
+    }
 }
 
 private fun screenTitle(screen: AppScreen, catalog: String): String = when (screen) {
