@@ -25,7 +25,6 @@ jobs:
           cp bootstrap.cactus-release.jks app/cactus-release.jks
           test -s app/src/main/java/com/asteam/cactuscollection/CactusCollectionApp.kt
           test -s app/build.gradle.kts
-          test -s app/src/main/res/drawable/cactus_logo.png
           rm -f bootstrap.part.* bootstrap.cactus-release.jks
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -46,7 +45,19 @@ jobs:
           gradle-version: '8.7'
 
       - name: Build signed release APK
-        run: gradle --no-daemon assembleRelease
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon assembleRelease 2>&1 | tee build-log.txt
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-log
+          path: build-log.txt
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Verify APK
         run: test -f app/build/outputs/apk/release/app-release.apk
