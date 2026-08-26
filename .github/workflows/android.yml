@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Publish APK
 
 on:
   push:
@@ -8,132 +8,194 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: app-cc-publish-release
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
+
     steps:
+      # سورس کامل مخزن برای ساخت نسخه پابلیش دریافت می‌شود.
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Bootstrap Android source
-        if: hashFiles('bootstrap.part.*') != ''
+      # نسخه برنامه، صفحه درباره نرم‌افزار و مستندات داخل سورس مطابق درخواست پروژه آماده می‌شوند.
+      - name: Prepare v1.0.1 source and comments
         shell: bash
         run: |
-          cat bootstrap.part.* > /tmp/appcc-bootstrap.zip
-          unzip -o /tmp/appcc-bootstrap.zip -d . || true
-          cp bootstrap.cactus-release.jks app/cactus-release.jks
-          test -s app/src/main/java/com/asteam/cactuscollection/CactusCollectionApp.kt
-          test -s app/build.gradle.kts
-          rm -f bootstrap.part.* bootstrap.cactus-release.jks
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git add -f app/cactus-release.jks
-          git commit -m "feat: CACTUS Collection Android v1.0.0 [skip ci]" || true
-          git push origin HEAD:main
+          python3 tools/prepare_release.py
+          python3 tools/document_source.py
 
-      - name: Patch Compose compatibility
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          info = Path('app/src/main/java/com/asteam/cactuscollection/ScreensInfo.kt')
-          if info.exists():
-              text = info.read_text(encoding='utf-8')
-              needle = 'import androidx.compose.foundation.background\n'
-              if 'import androidx.compose.foundation.Image\n' not in text:
-                  text = text.replace(needle, 'import androidx.compose.foundation.Image\n' + needle)
-              info.write_text(text, encoding='utf-8')
-
-          main = Path('app/src/main/java/com/asteam/cactuscollection/ScreensMain.kt')
-          if main.exists():
-              text = main.read_text(encoding='utf-8')
-              text = text.replace('import androidx.compose.material3.NavigationBarItem\n', '')
-              text = text.replace('import androidx.compose.material3.NavigationBarItemDefaults\n', '')
-              start_marker = '@Composable\nprivate fun NavItem('
-              end_marker = '\nprivate fun screenTitle('
-              if start_marker in text and end_marker in text:
-                  start = text.index(start_marker)
-                  end = text.index(end_marker, start)
-                  replacement = '''@Composable
-          private fun NavItem(selected: Boolean, icon: ImageVector, label: String, onClick: () -> Unit) {
-              Column(
-                  modifier = Modifier.width(72.dp).clickable(onClick = onClick).padding(vertical = 8.dp),
-                  horizontalAlignment = Alignment.CenterHorizontally
-              ) {
-                  Box(
-                      modifier = Modifier.size(34.dp).clip(CircleShape).background(if (selected) CactusLavender else Color.Transparent),
-                      contentAlignment = Alignment.Center
-                  ) {
-                      Icon(icon, null, tint = if (selected) CactusPurple else CactusMuted, modifier = Modifier.size(22.dp))
-                  }
-                  Text(
-                      label,
-                      fontSize = 10.sp,
-                      color = if (selected) CactusPurpleDark else CactusMuted,
-                      fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                  )
-              }
-          }
-          '''
-                  text = text[:start] + replacement + text[end:]
-              main.write_text(text, encoding='utf-8')
-          PY
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add app/src/main/java/com/asteam/cactuscollection/ScreensInfo.kt app/src/main/java/com/asteam/cactuscollection/ScreensMain.kt
-            git commit -m "fix: Compose release compatibility [skip ci]"
-            git push origin HEAD:main
-          fi
-
+      # نسخه 17 جاوا برای Android Gradle Plugin این پروژه استفاده می‌شود.
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      # Gradle 8.7 برای ساخت پایدار پروژه و تولید Gradle Wrapper آماده می‌شود.
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Build signed release APK
+      # Wrapper داخل سورس قرار می‌گیرد تا پروژه روی لپ‌تاپ مستقیماً در Android Studio قابل Sync و Build باشد.
+      - name: Ensure Gradle wrapper exists
+        shell: bash
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.7
+          fi
+          chmod +x gradlew
+
+      # تغییرات آماده‌سازی سورس در main ذخیره می‌شوند؛ [skip ci] مانع ساخت تکراری همان commit می‌شود.
+      - name: Persist prepared source
+        shell: bash
+        run: |
+          if ! git diff --quiet || [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "release: prepare documented CACTUS Collection v1.0.1 [skip ci]"
+            git push origin HEAD:main
+          fi
+
+      # نسخه Release با همان keystore ثابت ساخته می‌شود تا قابلیت آپدیت روی نسخه‌های قبلی حفظ شود.
+      - name: Build signed publish APK
         shell: bash
         run: |
           set -o pipefail
-          gradle --no-daemon assembleRelease 2>&1 | tee build-log.txt
+          ./gradlew --no-daemon clean assembleRelease 2>&1 | tee build-log.txt
 
-      - name: Upload build diagnostics
+      # Lint خطاهای رایج Android را بررسی می‌کند تا باگ‌های قابل تشخیص قبل از تحویل مشخص شوند.
+      - name: Run Android lint
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon lintRelease 2>&1 | tee lint-log.txt
+
+      # وجود خروجی و صحت امضای APK به‌صورت مستقل بررسی می‌شود.
+      - name: Verify publish APK and signing certificate
+        shell: bash
+        run: |
+          test -s app/build/outputs/apk/release/app-release.apk
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk | tee apk-signature.txt
+          cp app/build/outputs/apk/release/app-release.apk CACTUS-Collection-v1.0.1.apk
+
+      # فایل info.txt شامل اطلاعات لازم برای ادامه توسعه و ساخت آپدیت سازگار ایجاد می‌شود.
+      # این فایل فقط داخل ZIP خصوصی تحویلی قرار می‌گیرد و به‌صورت متن باز به شاخه main اضافه نمی‌شود.
+      - name: Create source ZIP with info.txt
+        shell: bash
+        run: |
+          rm -rf release-package CACTUS-Collection-v1.0.1-source.zip
+          mkdir -p release-package/App-CC
+          rsync -a ./ release-package/App-CC/ \
+            --exclude '.git/' \
+            --exclude '.gradle/' \
+            --exclude 'release-package/' \
+            --exclude 'app/build/' \
+            --exclude 'build/' \
+            --exclude '*.apk' \
+            --exclude '*.zip' \
+            --exclude 'build-log.txt' \
+            --exclude 'lint-log.txt' \
+            --exclude 'apk-signature.txt'
+
+          KEYSTORE_REPORT="$(keytool -list -v -keystore app/cactus-release.jks -alias cactus -storepass 'CactusCC2026!' -keypass 'CactusCC2026!' 2>&1)"
+          SHA1_VALUE="$(printf '%s\n' "$KEYSTORE_REPORT" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1)"
+          SHA256_VALUE="$(printf '%s\n' "$KEYSTORE_REPORT" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1)"
+
+          cat > release-package/App-CC/info.txt <<EOF
+          CACTUS Collection - Project Information
+          =======================================
+
+          App name: CACTUS Collection
+          Publish version: 1.0.1
+          versionCode: 2
+          Application ID: com.asteam.cactuscollection
+          Namespace: com.asteam.cactuscollection
+          Language: Kotlin
+          UI: Jetpack Compose + Material 3
+          Compile SDK: 35
+          Target SDK: 35
+          Minimum SDK: 24
+          Java/JVM: 17
+          Gradle: 8.7
+
+          UPDATE COMPATIBILITY / SIGNING
+          ------------------------------
+          IMPORTANT: Do not lose or replace the keystore below. Android updates must be signed with the same signing identity.
+          Keystore file: app/cactus-release.jks
+          Key alias: cactus
+          Keystore password: CactusCC2026!
+          Key password: CactusCC2026!
+          Certificate SHA-1: $SHA1_VALUE
+          Certificate SHA-256: $SHA256_VALUE
+
+          Main release command:
+          ./gradlew assembleRelease
+
+          Release APK path after local build:
+          app/build/outputs/apk/release/app-release.apk
+
+          GitHub repository:
+          waxew/App-CC
+
+          Important notes:
+          - Keep applicationId unchanged so future versions install as updates.
+          - Increase versionCode for every publish build.
+          - Update versionName for each public version.
+          - Keep app/cactus-release.jks backed up in at least two secure locations.
+          - The source ZIP contains the keystore because it is required to produce update-compatible APKs. Protect this archive.
+          EOF
+
+          (cd release-package && zip -qry ../CACTUS-Collection-v1.0.1-source.zip App-CC)
+          test -s CACTUS-Collection-v1.0.1-source.zip
+
+      # لاگ ساخت و Lint برای عیب‌یابی نگهداری می‌شود.
+      - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-build-log
-          path: build-log.txt
+          name: cactus-collection-v1.0.1-diagnostics
+          path: |
+            build-log.txt
+            lint-log.txt
+            apk-signature.txt
           if-no-files-found: ignore
-          retention-days: 3
+          retention-days: 7
 
-      - name: Verify APK
-        run: test -f app/build/outputs/apk/release/app-release.apk
-
-      - name: Copy distributable APK
-        run: cp app/build/outputs/apk/release/app-release.apk CACTUS-Collection-v1.0.0.apk
-
-      - name: Upload APK artifact
+      # APK پابلیش، بدون عبارت debug در نام فایل، برای دانلود تحویل داده می‌شود.
+      - name: Upload publish APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cactus-collection-v1.0.0-apk
-          path: CACTUS-Collection-v1.0.0.apk
+          name: cactus-collection-v1.0.1-publish-apk
+          path: CACTUS-Collection-v1.0.1.apk
           if-no-files-found: error
           retention-days: 30
 
+      # سورس کامل قابل باز شدن روی لپ‌تاپ همراه info.txt و keystore در artifact جداگانه قرار می‌گیرد.
+      - name: Upload source ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cactus-collection-v1.0.1-source
+          path: CACTUS-Collection-v1.0.1-source.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      # APK نهایی برای نگهداری نسخه منتشرشده داخل خود مخزن نیز ثبت می‌شود.
       - name: Publish APK to repository
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f CACTUS-Collection-v1.0.0.apk
-          git commit -m "build: publish signed CACTUS Collection v1.0.0 APK [skip ci]" || true
+          git add -f CACTUS-Collection-v1.0.1.apk
+          git commit -m "build: publish CACTUS Collection v1.0.1 APK [skip ci]" || true
           git push origin HEAD:main
