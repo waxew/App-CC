@@ -15,87 +15,71 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
 
     steps:
-      # سورس کامل مخزن برای ساخت نسخه پابلیش دریافت می‌شود.
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # نسخه برنامه، صفحه درباره نرم‌افزار و مستندات داخل سورس مطابق درخواست پروژه آماده می‌شوند.
-      - name: Prepare v1.0.1 source and comments
+      - name: Apply CACTUS v2 source package
         shell: bash
         run: |
-          python3 tools/prepare_release.py
-          python3 tools/document_source.py
+          if [ -f bootstrap_v2.b64 ]; then
+            base64 -d bootstrap_v2.b64 > /tmp/appcc-v2.zip
+            unzip -o /tmp/appcc-v2.zip -d .
+            rm -f bootstrap_v2.b64
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "feat: complete CACTUS Collection v2.0.0 local-first commerce [skip ci]" || true
+            git push origin HEAD:main
+          fi
 
-      # نسخه 17 جاوا برای Android Gradle Plugin این پروژه استفاده می‌شود.
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Gradle 8.7 برای ساخت پایدار پروژه و تولید Gradle Wrapper آماده می‌شود.
-      - name: Set up Gradle 8.7
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
 
-      # Wrapper داخل سورس قرار می‌گیرد تا پروژه روی لپ‌تاپ مستقیماً در Android Studio قابل Sync و Build باشد.
-      - name: Ensure Gradle wrapper exists
+      - name: Make wrapper executable
         shell: bash
-        run: |
-          if [ ! -f gradlew ]; then
-            gradle wrapper --gradle-version 8.7
-          fi
-          chmod +x gradlew
+        run: chmod +x gradlew
 
-      # تغییرات آماده‌سازی سورس در main ذخیره می‌شوند؛ [skip ci] مانع ساخت تکراری همان commit می‌شود.
-      - name: Persist prepared source
-        shell: bash
-        run: |
-          if ! git diff --quiet || [ -n "$(git status --porcelain)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "release: prepare documented CACTUS Collection v1.0.1 [skip ci]"
-            git push origin HEAD:main
-          fi
-
-      # نسخه Release با همان keystore ثابت ساخته می‌شود تا قابلیت آپدیت روی نسخه‌های قبلی حفظ شود.
-      - name: Build signed publish APK
+      - name: Build signed publish and debug APKs
         shell: bash
         run: |
           set -o pipefail
-          ./gradlew --no-daemon clean assembleRelease 2>&1 | tee build-log.txt
+          ./gradlew --no-daemon clean assembleRelease assembleDebug 2>&1 | tee build-log.txt
 
-      # Lint خطاهای رایج Android را بررسی می‌کند تا باگ‌های قابل تشخیص قبل از تحویل مشخص شوند.
       - name: Run Android lint
         shell: bash
         run: |
           set -o pipefail
           ./gradlew --no-daemon lintRelease 2>&1 | tee lint-log.txt
 
-      # وجود خروجی و صحت امضای APK به‌صورت مستقل بررسی می‌شود.
       - name: Verify publish APK and signing certificate
         shell: bash
         run: |
           test -s app/build/outputs/apk/release/app-release.apk
+          test -s app/build/outputs/apk/debug/app-debug.apk
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -n "$APKSIGNER"
           "$APKSIGNER" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk | tee apk-signature.txt
-          cp app/build/outputs/apk/release/app-release.apk CACTUS-Collection-v1.0.1.apk
+          cp app/build/outputs/apk/release/app-release.apk CACTUS-Collection-v2.0.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk CACTUS-Collection-v2.0.0-debug.apk
+          sha256sum CACTUS-Collection-v2.0.0.apk CACTUS-Collection-v2.0.0-debug.apk | tee apk-sha256.txt
 
-      # فایل info.txt شامل اطلاعات لازم برای ادامه توسعه و ساخت آپدیت سازگار ایجاد می‌شود.
-      # این فایل فقط داخل ZIP خصوصی تحویلی قرار می‌گیرد و به‌صورت متن باز به شاخه main اضافه نمی‌شود.
-      - name: Create source ZIP with info.txt
+      - name: Create source ZIP and project info
         shell: bash
         run: |
-          rm -rf release-package CACTUS-Collection-v1.0.1-source.zip
+          rm -rf release-package CACTUS-Collection-v2.0.0-source.zip
           mkdir -p release-package/App-CC
+
           rsync -a ./ release-package/App-CC/ \
             --exclude '.git/' \
             --exclude '.gradle/' \
@@ -106,19 +90,21 @@ jobs:
             --exclude '*.zip' \
             --exclude 'build-log.txt' \
             --exclude 'lint-log.txt' \
-            --exclude 'apk-signature.txt'
+            --exclude 'apk-signature.txt' \
+            --exclude 'apk-sha256.txt'
 
           KEYSTORE_REPORT="$(keytool -list -v -keystore app/cactus-release.jks -alias cactus -storepass 'CactusCC2026!' -keypass 'CactusCC2026!' 2>&1)"
           SHA1_VALUE="$(printf '%s\n' "$KEYSTORE_REPORT" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1)"
           SHA256_VALUE="$(printf '%s\n' "$KEYSTORE_REPORT" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1)"
+          APK_SHA256="$(sha256sum CACTUS-Collection-v2.0.0.apk | awk '{print $1}')"
 
           cat > release-package/App-CC/info.txt <<EOF
           CACTUS Collection - Project Information
           =======================================
 
           App name: CACTUS Collection
-          Publish version: 1.0.1
-          versionCode: 2
+          Publish version: 2.0.0
+          versionCode: 3
           Application ID: com.asteam.cactuscollection
           Namespace: com.asteam.cactuscollection
           Language: Kotlin
@@ -127,75 +113,113 @@ jobs:
           Target SDK: 35
           Minimum SDK: 24
           Java/JVM: 17
-          Gradle: 8.7
 
-          UPDATE COMPATIBILITY / SIGNING
+          VERSION 2.0.0 CORE FEATURES
+          ---------------------------
+          - Local-first product catalog
+          - Search
+          - Persistent cart
+          - Checkout and local order creation
+          - Order history and reorder
+          - Order sharing
+          - Custom clothing design studio
+          - Image picker for artwork
+          - Saved design projects
+          - Wholesale calculator with tiered discount
+          - Loyalty points and levels
+          - RTL drawer and correct Android back stack
+          - Dynamic About Software version
+          - Persian price formatting with thousands separators
+
+          SIGNING / UPDATE COMPATIBILITY
           ------------------------------
-          IMPORTANT: Do not lose or replace the keystore below. Android updates must be signed with the same signing identity.
+          IMPORTANT: Do not lose or replace this keystore. Future Android updates must use the same signing identity.
+
           Keystore file: app/cactus-release.jks
           Key alias: cactus
           Keystore password: CactusCC2026!
           Key password: CactusCC2026!
           Certificate SHA-1: $SHA1_VALUE
           Certificate SHA-256: $SHA256_VALUE
+          Publish APK SHA-256: $APK_SHA256
 
-          Main release command:
+          BUILD COMMANDS
+          --------------
+          Publish APK:
           ./gradlew assembleRelease
 
-          Release APK path after local build:
+          Debug APK:
+          ./gradlew assembleDebug
+
+          Lint:
+          ./gradlew lintRelease
+
+          Publish output:
           app/build/outputs/apk/release/app-release.apk
 
-          GitHub repository:
+          Debug output:
+          app/build/outputs/apk/debug/app-debug.apk
+
+          REPOSITORY
+          ----------
           waxew/App-CC
 
-          Important notes:
-          - Keep applicationId unchanged so future versions install as updates.
-          - Increase versionCode for every publish build.
-          - Update versionName for each public version.
-          - Keep app/cactus-release.jks backed up in at least two secure locations.
-          - The source ZIP contains the keystore because it is required to produce update-compatible APKs. Protect this archive.
+          IMPORTANT NOTES
+          ---------------
+          - Keep applicationId unchanged.
+          - Increase versionCode for every published update.
+          - Keep app/cactus-release.jks in secure backups.
+          - This source archive contains signing material and must remain private.
+          - OTP, payment gateway, cloud order synchronization, push notifications and live production status require real external service credentials and must never be implemented with fake secrets.
           EOF
 
-          (cd release-package && zip -qry ../CACTUS-Collection-v1.0.1-source.zip App-CC)
-          test -s CACTUS-Collection-v1.0.1-source.zip
+          (cd release-package && zip -qry ../CACTUS-Collection-v2.0.0-source.zip App-CC)
+          test -s CACTUS-Collection-v2.0.0-source.zip
+          sha256sum CACTUS-Collection-v2.0.0-source.zip | tee source-sha256.txt
 
-      # لاگ ساخت و Lint برای عیب‌یابی نگهداری می‌شود.
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cactus-collection-v1.0.1-diagnostics
+          name: cactus-collection-v2.0.0-diagnostics
           path: |
             build-log.txt
             lint-log.txt
             apk-signature.txt
+            apk-sha256.txt
+            source-sha256.txt
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 14
 
-      # APK پابلیش، بدون عبارت debug در نام فایل، برای دانلود تحویل داده می‌شود.
-      - name: Upload publish APK artifact
+      - name: Upload publish APK
         uses: actions/upload-artifact@v4
         with:
-          name: cactus-collection-v1.0.1-publish-apk
-          path: CACTUS-Collection-v1.0.1.apk
+          name: cactus-collection-v2.0.0-publish-apk
+          path: CACTUS-Collection-v2.0.0.apk
           if-no-files-found: error
           retention-days: 30
 
-      # سورس کامل قابل باز شدن روی لپ‌تاپ همراه info.txt و keystore در artifact جداگانه قرار می‌گیرد.
-      - name: Upload source ZIP artifact
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: cactus-collection-v1.0.1-source
-          path: CACTUS-Collection-v1.0.1-source.zip
+          name: cactus-collection-v2.0.0-debug-apk
+          path: CACTUS-Collection-v2.0.0-debug.apk
           if-no-files-found: error
           retention-days: 30
 
-      # APK نهایی برای نگهداری نسخه منتشرشده داخل خود مخزن نیز ثبت می‌شود.
-      - name: Publish APK to repository
+      - name: Upload source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: cactus-collection-v2.0.0-source
+          path: CACTUS-Collection-v2.0.0-source.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish release APK to repository
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f CACTUS-Collection-v1.0.1.apk
-          git commit -m "build: publish CACTUS Collection v1.0.1 APK [skip ci]" || true
+          git add -f CACTUS-Collection-v2.0.0.apk
+          git commit -m "build: publish CACTUS Collection v2.0.0 APK [skip ci]" || true
           git push origin HEAD:main
