@@ -36,12 +36,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +63,12 @@ import com.asteam.cactuscollection.ui.theme.CactusMuted
 import com.asteam.cactuscollection.ui.theme.CactusPurple
 import com.asteam.cactuscollection.ui.theme.CactusPurpleDark
 import com.asteam.cactuscollection.ui.theme.CactusText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 // این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
@@ -98,6 +107,32 @@ internal fun SettingsScreen(preferences: UserPreferences) {
     // متغیر notificationsEnabled یک مقدار قابل‌تغییر موردنیاز این بخش را نگهداری می‌کند.
     var notificationsEnabled by remember { mutableStateOf(preferences.notificationsEnabled()) }
     val context = LocalContext.current
+    // coroutineScope برای بررسی نسخه در پس‌زمینه استفاده می‌شود تا UI مسدود نشود.
+    val coroutineScope = rememberCoroutineScope()
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    var updateDownloadUrl by remember { mutableStateOf<String?>(null) }
+    var updateVersionName by remember { mutableStateOf("") }
+
+    // در صورت پیدا شدن نسخه جدید، Dialog به کاربر حق انتخاب دانلود یا تعویق می‌دهد.
+    if (updateDownloadUrl != null) {
+        AlertDialog(
+            onDismissRequest = { updateDownloadUrl = null },
+            icon = { Icon(Icons.Rounded.Update, null, tint = CactusPurple) },
+            title = { Text("نسخه جدید $updateVersionName آماده است") },
+            text = { Text("نسخه نصب‌شده ${BuildConfig.VERSION_NAME} است. می‌توانید فایل نسخه جدید را دریافت کنید.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val url = updateDownloadUrl
+                    updateDownloadUrl = null
+                    if (!url.isNullOrBlank()) {
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                            .onFailure { Toast.makeText(context, "مرورگر قابل استفاده پیدا نشد.", Toast.LENGTH_SHORT).show() }
+                    }
+                }) { Text("دانلود نسخه جدید") }
+            },
+            dismissButton = { TextButton(onClick = { updateDownloadUrl = null }) { Text("بعداً") } }
+        )
+    }
 
     // LazyColumn محتوای عمودی را بهینه و قابل اسکرول نمایش می‌دهد.
     LazyColumn(
@@ -150,21 +185,58 @@ internal fun SettingsScreen(preferences: UserPreferences) {
                     Spacer(Modifier.height(14.dp))
                     Button(
                         onClick = {
-                            Toast.makeText(
-                                context,
-                                "سرویس بروزرسانی خودکار پس از اتصال سرور فعال می‌شود.",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            if (isCheckingUpdate) return@Button
+                            isCheckingUpdate = true
+                            coroutineScope.launch {
+                                val result = checkForAppUpdate()
+                                isCheckingUpdate = false
+                                result.onSuccess { update ->
+                                    if (update.versionCode > BuildConfig.VERSION_CODE) {
+                                        updateVersionName = update.versionName
+                                        updateDownloadUrl = update.downloadUrl
+                                    } else {
+                                        Toast.makeText(context, "نسخه ${BuildConfig.VERSION_NAME} آخرین نسخه است.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }.onFailure {
+                                    Toast.makeText(context, "بررسی بروزرسانی انجام نشد؛ اتصال اینترنت را بررسی کنید.", Toast.LENGTH_LONG).show()
+                                }
+                            }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = CactusPurple)
                     ) {
-                        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
-                        Text("بررسی نسخه جدید", fontWeight = FontWeight.Bold)
+                        // هنگام درخواست شبکه، متن وضعیت واضح نمایش داده می‌شود.
+                        Text(if (isCheckingUpdate) "در حال بررسی..." else "بررسی نسخه جدید", fontWeight = FontWeight.Bold)
                     }
                 }
             }
+        }
+    }
+}
+
+// داده‌ی کوچک manifest بروزرسانی که از latest.json خوانده می‌شود.
+private data class AppUpdateInfo(val versionCode: Int, val versionName: String, val downloadUrl: String)
+
+// بررسی نسخه روی Dispatchers.IO انجام می‌شود و timeout دارد تا شبکه ضعیف UI را متوقف نکند.
+private suspend fun checkForAppUpdate(): Result<AppUpdateInfo> = withContext(Dispatchers.IO) {
+    runCatching {
+        val connection = URL(BuildConfig.UPDATE_MANIFEST_URL).openConnection() as HttpURLConnection
+        try {
+            connection.connectTimeout = 8_000
+            connection.readTimeout = 8_000
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Accept", "application/json")
+            if (connection.responseCode !in 200..299) error("HTTP ${connection.responseCode}")
+            val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val json = JSONObject(body)
+            AppUpdateInfo(
+                versionCode = json.getInt("versionCode"),
+                versionName = json.optString("versionName", "جدید"),
+                downloadUrl = json.getString("downloadUrl")
+            )
+        } finally {
+            connection.disconnect()
         }
     }
 }

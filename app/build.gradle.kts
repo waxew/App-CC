@@ -16,10 +16,10 @@ android {
         applicationId = "com.asteam.cactuscollection"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "2.0.0"
 
-        buildConfigField("String", "UPDATE_MANIFEST_URL", "\"\"")
+        buildConfigField("String", "UPDATE_MANIFEST_URL", "\"https://raw.githubusercontent.com/waxew/App-CC/main/latest.json\"")
     }
 
     // signingConfigs هویت امضای نسخه Release را مشخص می‌کند تا آپدیت‌های آینده روی نسخه قبلی نصب شوند.

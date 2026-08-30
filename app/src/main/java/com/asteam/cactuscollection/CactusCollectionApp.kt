@@ -55,7 +55,17 @@ internal enum class AppScreen {
     // کاتالوگ دسته‌بندی انتخاب‌شده.
     CATALOG,
     // صفحه جستجوی محصولات و خدمات.
-    SEARCH
+    SEARCH,
+    // سبد خرید کاربر.
+    CART,
+    // استودیوی طراحی اختصاصی پوشاک.
+    DESIGN_STUDIO,
+    // محاسبه و ثبت سفارش عمده.
+    WHOLESALE,
+    // پروژه‌های طراحی ذخیره‌شده.
+    SAVED_DESIGNS,
+    // مرحله ثبت اطلاعات تحویل و نهایی‌سازی سفارش.
+    CHECKOUT
 }
 
 // مدل ساده‌ی اطلاعات پروفایل که در حافظه‌ی محلی برنامه ذخیره می‌شود.
@@ -148,6 +158,8 @@ fun CactusCollectionApp() {
         val context = LocalContext.current
         // نمونه‌ی تنظیمات فقط یک‌بار ساخته و بین recompositionها حفظ می‌شود.
         val preferences = remember { UserPreferences(context) }
+        // فروشگاه محلی فقط یک‌بار ساخته می‌شود تا سبد، سفارش‌ها و طرح‌ها پایدار بمانند.
+        val store = remember { CactusStore(context) }
         // صفحه‌ی جاری ابتدا Splash است.
         var currentScreen by remember { mutableStateOf(AppScreen.SPLASH) }
         // تاریخچه‌ی صفحات برای عملکرد صحیح دکمه‌ی Back نگهداری می‌شود.
@@ -258,6 +270,8 @@ fun CactusCollectionApp() {
                 currentScreen = currentScreen,
                 // اطلاعات پروفایل برای نمایش نام و حساب کاربری ارسال می‌شود.
                 profile = profile,
+                // store وضعیت فروشگاهی Local-first را در اختیار پوسته اصلی قرار می‌دهد.
+                store = store,
                 // تنظیمات محلی در اختیار صفحات تنظیمات قرار می‌گیرد.
                 preferences = preferences,
                 // نام دسته‌ی انتخاب‌شده برای کاتالوگ ارسال می‌شود.

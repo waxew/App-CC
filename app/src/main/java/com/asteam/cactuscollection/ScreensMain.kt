@@ -115,6 +115,7 @@ private data class DrawerItem(
 internal fun MainShell(
     currentScreen: AppScreen,
     profile: UserProfile,
+    store: CactusStore,
     preferences: UserPreferences,
     selectedCatalog: String,
     onCatalogSelected: (String) -> Unit,
@@ -159,7 +160,9 @@ internal fun MainShell(
             topBar = {
                 AppHeader(
                     title = screenTitle(currentScreen, selectedCatalog),
-                    onMenu = { scope.launch { drawerState.open() } }
+                    cartCount = store.cartCount,
+                    onMenu = { scope.launch { drawerState.open() } },
+                    onCart = { onNavigate(AppScreen.CART) }
                 )
             },
             bottomBar = {
@@ -179,19 +182,33 @@ internal fun MainShell(
             // Box برای هم‌پوشانی یا تراز دقیق عناصر این بخش استفاده می‌شود.
             Box(Modifier.fillMaxSize().padding(padding)) {
                 when (currentScreen) {
-                    AppScreen.HOME -> HomeScreen(onCatalogSelected)
-                    AppScreen.CLUB -> ClubScreen()
-                    AppScreen.CATALOG -> CatalogScreen(selectedCatalog) { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
-                    // صفحه جستجو از همان داده‌های دسته‌بندی نسخه محلی استفاده می‌کند.
-                    AppScreen.SEARCH -> SearchScreen(onCatalogSelected)
-                    AppScreen.ORDERS -> OrdersScreen()
+                    // خانه‌ی کامل فروشگاهی.
+                    AppScreen.HOME -> CommerceHomeScreen(store, onCatalogSelected, onNavigate)
+                    // باشگاه بر اساس امتیاز و سفارش‌های واقعی محلی.
+                    AppScreen.CLUB -> CommerceClubScreen(store, { onNavigate(AppScreen.ORDERS) }, { onNavigate(AppScreen.SAVED_DESIGNS) })
+                    // کاتالوگ محصولات قابل افزودن به سبد.
+                    AppScreen.CATALOG -> CommerceCatalogScreen(store, selectedCatalog, { onNavigate(AppScreen.CART) }, { onNavigate(AppScreen.DESIGN_STUDIO) })
+                    // جستجوی واقعی در محصولات.
+                    AppScreen.SEARCH -> CommerceSearchScreen(store) { onNavigate(AppScreen.CART) }
+                    // تاریخچه سفارش‌ها و سفارش مجدد.
+                    AppScreen.ORDERS -> CommerceOrdersScreen(store) { onNavigate(AppScreen.CART) }
+                    // سبد خرید.
+                    AppScreen.CART -> CommerceCartScreen(store, { onNavigate(AppScreen.CHECKOUT) }, { onNavigate(AppScreen.HOME) })
+                    // طراحی اختصاصی پوشاک.
+                    AppScreen.DESIGN_STUDIO -> DesignStudioScreen(store, { onNavigate(AppScreen.CART) }, { onNavigate(AppScreen.SAVED_DESIGNS) })
+                    // سفارش عمده.
+                    AppScreen.WHOLESALE -> WholesaleScreen(store) { onNavigate(AppScreen.CART) }
+                    // پروژه‌های طراحی ذخیره‌شده.
+                    AppScreen.SAVED_DESIGNS -> SavedDesignsScreen(store, { onNavigate(AppScreen.DESIGN_STUDIO) }, { onNavigate(AppScreen.CART) })
+                    // نهایی‌سازی سفارش.
+                    AppScreen.CHECKOUT -> CommerceCheckoutScreen(store, profile, { onNavigate(AppScreen.ORDERS) }, { onNavigate(AppScreen.CART) })
                     AppScreen.SETTINGS -> SettingsScreen(preferences)
                     AppScreen.ABOUT_US -> AboutUsScreen()
                     AppScreen.CONTACT_US -> ContactUsScreen()
                     AppScreen.ABOUT_APP -> AboutAppScreen()
                     AppScreen.PROFILE -> ProfileScreen(profile, onEditProfile)
-                    // این شاخه حالت جایگزین شرط قبلی را مدیریت می‌کند.
-                    else -> HomeScreen(onCatalogSelected)
+                    // مقصد ناشناخته به خانه برمی‌گردد.
+                    else -> CommerceHomeScreen(store, onCatalogSelected, onNavigate)
                 }
             }
         }
@@ -200,19 +217,35 @@ internal fun MainShell(
 
 // این annotation رفتار یا نوع declaration بعدی را برای Compose/Android مشخص می‌کند.
 @Composable
-private fun AppHeader(title: String, onMenu: () -> Unit) {
-    // Row عناصر رابط کاربری این قسمت را در یک ردیف افقی قرار می‌دهد.
+private fun AppHeader(
+    title: String,
+    cartCount: Int,
+    onMenu: () -> Unit,
+    onCart: () -> Unit
+) {
+    // نوار بالا: منوی همبرگری، عنوان صفحه، سبد خرید و لوگوی برند.
     Row(
-        modifier = Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // این IconButton یک عمل لمسی را با آیکون نمایش می‌دهد.
         IconButton(onClick = onMenu) {
             Icon(Icons.Rounded.Menu, contentDescription = "منوی همبرگری", tint = CactusText, modifier = Modifier.size(28.dp))
         }
-        // این Text متن قابل‌مشاهده توسط کاربر را نمایش می‌دهد.
-        Text(title, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Black, fontSize = 18.sp)
-        Image(painterResource(R.drawable.cactus_logo), null, modifier = Modifier.size(42.dp), contentScale = ContentScale.Fit)
+        Text(title, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Black, fontSize = 17.sp)
+        Box(contentAlignment = Alignment.TopEnd) {
+            IconButton(onClick = onCart) {
+                Icon(Icons.Rounded.ShoppingCart, contentDescription = "سبد خرید", tint = CactusPurpleDark)
+            }
+            if (cartCount > 0) {
+                Box(
+                    modifier = Modifier.size(18.dp).clip(CircleShape).background(Color(0xFFFF6B8E)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(cartCount.coerceAtMost(99).toString(), color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+        Image(painterResource(R.drawable.cactus_logo), "CACTUS Collection", modifier = Modifier.size(40.dp), contentScale = ContentScale.Fit)
     }
 }
 
@@ -227,8 +260,12 @@ private fun AppDrawer(
     // متغیر items یک مقدار ثابت/مرجع موردنیاز این بخش را نگهداری می‌کند.
     val items = listOf(
         DrawerItem("خانه", Icons.Rounded.Home, AppScreen.HOME),
+        DrawerItem("طراحی اختصاصی", Icons.Rounded.AutoAwesome, AppScreen.DESIGN_STUDIO),
+        DrawerItem("سبد خرید", Icons.Rounded.ShoppingCart, AppScreen.CART),
         DrawerItem("سفارش‌های من", Icons.Rounded.ReceiptLong, AppScreen.ORDERS),
         DrawerItem("باشگاه مشتریان", Icons.Rounded.Star, AppScreen.CLUB),
+        DrawerItem("سفارش عمده", Icons.Rounded.Storefront, AppScreen.WHOLESALE),
+        DrawerItem("طرح‌های ذخیره‌شده", Icons.Rounded.Verified, AppScreen.SAVED_DESIGNS),
         DrawerItem("تنظیمات", Icons.Rounded.Settings, AppScreen.SETTINGS),
         DrawerItem("درباره ما", Icons.Rounded.Workspaces, AppScreen.ABOUT_US),
         DrawerItem("تماس با ما", Icons.Rounded.Campaign, AppScreen.CONTACT_US),
@@ -765,6 +802,11 @@ private fun screenTitle(screen: AppScreen, catalog: String): String = when (scre
     AppScreen.PROFILE -> "حساب کاربری"
     AppScreen.CATALOG -> catalog
     AppScreen.SEARCH -> "جستجو"
+    AppScreen.CART -> "سبد خرید"
+    AppScreen.DESIGN_STUDIO -> "استودیو طراحی"
+    AppScreen.WHOLESALE -> "سفارش عمده"
+    AppScreen.SAVED_DESIGNS -> "طرح‌های ذخیره‌شده"
+    AppScreen.CHECKOUT -> "ثبت اطلاعات تحویل"
     // این شاخه حالت جایگزین شرط قبلی را مدیریت می‌کند.
     else -> "CACTUS Collection"
 }

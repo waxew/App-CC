@@ -1,0 +1,24 @@
+CACTUS Collection - Project Information
+=======================================
+Publish version: 2.0.0
+versionCode: 3
+Application ID: com.asteam.cactuscollection
+Language: Kotlin
+UI: Jetpack Compose + Material 3
+Compile / Target SDK: 35
+Minimum SDK: 24
+Java: 17
+
+Implemented in 2.0.0:
+- Persistent local cart
+- Catalog + search
+- Checkout + local order creation
+- Order history / reorder / share
+- Design studio + image picker
+- Saved designs
+- Wholesale calculator
+- Loyalty points
+- RTL Drawer + correct Back Stack
+- In-app version check using latest.json
+
+Signing information is kept separately in the private delivery package. Do not publish signing credentials.
